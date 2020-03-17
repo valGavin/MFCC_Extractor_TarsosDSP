@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class Feature_Extractor {
 
@@ -43,6 +44,7 @@ public class Feature_Extractor {
     private static final int RANK_DATA = 3;
     private static final int RANK_LABEL = 1;
     private static final int DIM_X = 612;
+    private static final int DIM_X_SMALL = 102;
     private static final int DIM_Y = 40;
     private static final int DIM_Z_TRAIN = 3307;
     private static final int DIM_Z_TEST = 499;
@@ -50,6 +52,7 @@ public class Feature_Extractor {
     private static final String FILENAME_TEST = "h5\\features_test_" + DIM_X + ".h5";
     private static final String DATASET_DATA = "data";
     private static final String DATASET_LABEL = "label";
+
     private static final int sampleRate = 8000;
     private static final int size = 400;
     private static final int overlap = 322;
@@ -57,6 +60,8 @@ public class Feature_Extractor {
     private static final int melFilter = cepstrum;
     private static final float lowerFreq = 0f;
     private static final float upperFreq = ((float) sampleRate) / 2f;
+    private static AudioDispatcher audioDispatcher = null;
+
     private static float[][][] trainData = new float[DIM_Z_TRAIN][DIM_X][DIM_Y];
     private static float[][][] testData = new float[DIM_Z_TEST][DIM_X][DIM_Y];
     private static int[] trainLabel = new int[DIM_Z_TRAIN];
@@ -65,13 +70,26 @@ public class Feature_Extractor {
     private static int testCount = 0;
     private static int frameCount = 0;
     private static float[][] mfccs = new float[DIM_X][DIM_Y];
-    private static AudioDispatcher audioDispatcher = null;
+
+    private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        for (int i = 1; i < 4; i++)
-            csvReader(i);
-
-        writeToH5();
+        int choice;
+        System.out.println("================== MFCC EXTRACTOR ==================");
+        for (int i = 0; i < 3; i++) {
+            System.out.println("\nThis program provided two sizes for the extraction size:");
+            System.out.println("\t1. 612 frames x 40 MFCCs");
+            System.out.println("\t2. 102 frames x 40 MFCCs");
+            System.out.print("Your choice: ");
+            choice = scanner.nextInt();
+            if (choice < 3) {
+                for (int j = 1; j < 4; j++)
+                    csvReader(i, choice);
+                writeToH5();
+            } else {
+                System.out.println("ERROR: Wrong input");
+            }
+        }
     }
 
     /**
@@ -80,7 +98,7 @@ public class Feature_Extractor {
      *
      * @param code determine which dataset to read
      */
-    private static void csvReader(int code) {
+    private static void csvReader(int code, int choice) {
         CSVReader csvReader;
         String[] line;
         try {
@@ -93,9 +111,9 @@ public class Feature_Extractor {
                     csvReader.readNext();
                     while ((line = csvReader.readNext()) != null) {
                         if (line[5].contentEquals("10"))
-                            arrayHandler(false, URBANSOUND_PATH + line[5] + "\\" + line[0], line[6]);
+                            arrayHandler(false, URBANSOUND_PATH + line[5] + "\\" + line[0], line[6], choice);
                         else
-                            arrayHandler(true, URBANSOUND_PATH + line[5] + "\\" + line[0], line[6]);
+                            arrayHandler(true, URBANSOUND_PATH + line[5] + "\\" + line[0], line[6], choice);
                     }
 
                     System.out.println("\n============= EXTRACTION DONE =============");
@@ -109,7 +127,7 @@ public class Feature_Extractor {
                     csvReader = new CSVReader(new FileReader(CSV_FSD_TRAIN));
                     csvReader.readNext();
                     while ((line = csvReader.readNext()) != null)
-                        arrayHandler(true, FSD_TRAIN_PATH + line[0], line[2]);
+                        arrayHandler(true, FSD_TRAIN_PATH + line[0], line[2], choice);
 
                     System.out.println("\n============= EXTRACTION DONE =============");
                     System.out.println("Train count: " + trainCount);
@@ -122,7 +140,7 @@ public class Feature_Extractor {
                     csvReader = new CSVReader(new FileReader(CSV_FSD_TEST));
                     csvReader.readNext();
                     while ((line = csvReader.readNext()) != null)
-                        arrayHandler(false, FSD_TEST_PATH + line[0], line[2]);
+                        arrayHandler(false, FSD_TEST_PATH + line[0], line[2], choice);
 
                     System.out.println("\n============= EXTRACTION DONE =============");
                     System.out.println("Test count: " + testCount);
@@ -152,8 +170,8 @@ public class Feature_Extractor {
      * @param filename holds the dataset path
      * @param label    holds the class ID extracted from the dataset
      */
-    private static void arrayHandler(boolean train, String filename, String label) {
-        float[][] temp = extractMFCC(filename);
+    private static void arrayHandler(boolean train, String filename, String label, int choice) {
+        float[][] temp = extractMFCC(filename, choice);
         if (!train) {
             for (int i = 0; i < DIM_X; i++)
                 System.arraycopy(temp[i], 0, testData[testCount][i], 0, DIM_Y);
@@ -176,10 +194,19 @@ public class Feature_Extractor {
      * @param filePath holds the full audio file path including the file extension
      * @return the collective extracted MFCCs; saved in a two-dimensional array
      */
-    private static float[][] extractMFCC(String filePath) {
+    private static float[][] extractMFCC(String filePath, int choice) {
         // Zero padding
         for (float[] row : mfccs)
             Arrays.fill(row, (float) 0.0);
+
+        // Select frame size based on the user input
+        int frameLimit = 0;
+        if (choice == 1) {
+            frameLimit = DIM_X;
+        } else if (choice == 2) {
+            frameLimit = DIM_X_SMALL;
+        }
+        int finalFrameLimit = frameLimit;
 
         audioDispatcher = AudioDispatcherFactory.fromPipe(filePath, sampleRate, size, overlap);
         final MFCC mfcc = new MFCC(size, sampleRate, cepstrum, melFilter, lowerFreq, upperFreq);
@@ -187,7 +214,7 @@ public class Feature_Extractor {
         audioDispatcher.addAudioProcessor(new AudioProcessor() {
             @Override
             public boolean process(AudioEvent audioEvent) {
-                if (frameCount < DIM_X) {
+                if (frameCount < finalFrameLimit) {
                     mfccs[frameCount] = mfcc.getMFCC();
                     frameCount++;
                     return true;
