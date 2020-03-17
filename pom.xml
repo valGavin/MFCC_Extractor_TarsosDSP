@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.example</groupId>
+    <artifactId>MFCC Extractor</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>1.13</maven.compiler.source>
+        <maven.compiler.target>1.13</maven.compiler.target>
+    </properties>
+
+    <!-- https://mvnrepository.com/artifact/com.opencsv/opencsv -->
+    <dependencies>
+        <dependency>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
+            <version>5.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>jarhdf5-1.10.5</groupId>
+            <artifactId>jarhdf5-1.10.5</artifactId>
+            <version>1.10.5</version>
+            <scope>system</scope>
+            <systemPath>${basedir}\src\lib\jarhdf5-1.10.5.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>slf4j-api-1.7.25</groupId>
+            <artifactId>slf4j-api-1.7.25</artifactId>
+            <version>1.7.25</version>
+            <scope>system</scope>
+            <systemPath>${basedir}\src\lib\slf4j-api-1.7.25.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>slf4j-nop-1.7.25</groupId>
+            <artifactId>slf4j-nop-1.7.25</artifactId>
+            <version>1.7.25</version>
+            <scope>system</scope>
+            <systemPath>${basedir}\src\lib\slf4j-nop-1.7.25.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>TarsosDSP-latest-bin</groupId>
+            <artifactId>TarsosDSP-latest-bin</artifactId>
+            <version>2.4</version>
+            <scope>system</scope>
+            <systemPath>${basedir}\src\lib\TarsosDSP-latest-bin.jar</systemPath>
+        </dependency>
+    </dependencies>
+</project>
